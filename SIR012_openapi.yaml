@@ -155,12 +155,7 @@ components:
         cctius:
           type: array
           items:
-            allOf:
-            - type: object
-              properties:
-                id: 
-                  type: integer
-            - $ref: '#/components/schemas/Cctiu'
+            $ref: '#/components/schemas/Cctiu'
               
           
         
