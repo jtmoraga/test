@@ -24,6 +24,7 @@ paths:
         'El SIR comprueba la coherencia. Se comprueba:
         
         * Que para un mismo modelo de ccTIU dentro de la colección **inmutableHwInfo**, se proporcionan los mismo **key** que en los modelos anteriores, y que los **value** son únicos.'
+        
       requestBody:
         description: Entidad ccTIU que se añade al SIR
         content:
@@ -32,14 +33,17 @@ paths:
               $ref: '#/components/schemas/CctiuBase'
         required: true
       responses:
-        '200':
+        '201':
           description: Operación correcta.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Cctiu'
         '406':
-          description: Parametros erroneos o incoherentes.
+          description: |
+            No aceptado.
+            
+            El contenido del cuerpo no cumple con el esquema esperado.
     get:
       tags:
         - ccTIU
@@ -156,12 +160,4 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Cctiu'
-              
-          
-        
-      
-            
-            
-            
-    
       
