@@ -1,0 +1,242 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SIR",
+    "description": "Definición de la API REST de acceso al módulo SIR (Servicio de Identificación y Registro) de la T-mobilitat.",
+    "version": "1.0.3"
+  },
+  "tags": [
+    {
+      "name": "ccTIU",
+      "description": "Acceso a las entidades de ccTIU"
+    },
+    {
+      "name": "ccTIU Models",
+      "description": "Acceso a las entidades de Modelos de ccTIU"
+    },
+    {
+      "name": "Agencies",
+      "description": "Acceso a las entidades de agencias o empresas del sistema"
+    },
+    {
+      "name": "Agency Group",
+      "description": "Acceso a las entidades de grupo de empresas o agencias"
+    }
+  ],
+  "paths": {
+    "/cctius": {
+      "post": {
+        "tags": [
+          "ccTIU"
+        ],
+        "summary": "Añade un nuevo ccTIU.",
+        "operationId": "addCctiu",
+        "description": "El SIR comprueba la coherencia. Se comprueba:\n* Que para un mismo modelo de ccTIU dentro de la colección **inmutableHwInfo**, se proporcionan los mismo **key** que en los modelos anteriores, y que los **value** son únicos.",
+        "requestBody": {
+          "description": "Entidad ccTIU que se añade al SIR",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CctiuBase"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cctiu"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Parametros erroneos o incoherentes."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ccTIU"
+        ],
+        "summary": "Obtiene todos los ccTIU",
+        "description": "Obtiene la colección de todos los ccTIU",
+        "operationId": "getCctius",
+        "responses": {
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cctius"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El formato del ID suministrado es incorrecto"
+          },
+          "404": {
+            "description": "ccTIU no encontrada"
+          }
+        }
+      }
+    },
+    "/cctius/{cctiuId}": {
+      "get": {
+        "tags": [
+          "ccTIU"
+        ],
+        "summary": "Obtiene un ccTIU por su ID",
+        "description": "Devuelve un único ccTIU",
+        "operationId": "getCctiuById",
+        "parameters": [
+          {
+            "name": "cctiuId",
+            "in": "path",
+            "description": "ID del ccTIU",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación correcta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cctiu"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "El formato del ID suministrado es incorrecto"
+          },
+          "404": {
+            "description": "ccTIU no encontrada"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CctiuBase": {
+        "required": [
+          "modelId"
+        ],
+        "type": "object",
+        "properties": {
+          "modelId": {
+            "description": "Identificador del modelo de ccTIU",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647,
+            "example": 2
+          },
+          "inmutableHwInfo": {
+            "description": "Información propia de esta ccTIU que no cambia en el tiempo. Es una colección de elementos clave-valor.",
+            "type": "array",
+            "items": {
+              "required": [
+                "key",
+                "value"
+              ],
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "example": [
+              {
+                "key": "EC_CCTIU_MAC_ADDRESS",
+                "value": "FCC23D13EDBB"
+              },
+              {
+                "key": "EC_CCTIU_FACTORY_ID",
+                "value": "0A80C20434100032A85EA00020000100"
+              }
+            ]
+          }
+        }
+      },
+      "Cctiu": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "creationDate",
+              "modificationDate"
+            ],
+            "properties": {
+              "id": {
+                "description": "Identificador único",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2147483647,
+                "example": 598
+              },
+              "creationDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "modificationDate": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/CctiuBase"
+          }
+        ]
+      },
+      "CollectionLinkBase": {
+        "type": "object",
+        "properties": {
+          "next": {
+            "description": "URI al siguiente subconjunto de la colección",
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Cctius": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CollectionLinkBase"
+              }
+            ]
+          },
+          "cctius": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Cctiu"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
