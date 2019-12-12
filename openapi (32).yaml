@@ -1,0 +1,312 @@
+openapi: 3.0.1
+info:
+  title: SIR
+  version: 1.0.3
+  description: >-
+    Definición de la API REST de acceso al módulo SIR (Servicio de Identificación y Registro) de la T-mobilitat.
+    
+    # Alcance
+    
+    El SIR proporciona un servicio de registro de elementos comunes que por su naturaleza es indispensable que sean únicos para la correcta interoperabilidad de los actores del sistema.
+    
+    
+    Las reglas generales que aplican a las entidades que registra el SIR, son:
+    
+    * Toda entidad ha de estar identificada de forma única.
+    
+    * A las entidades solo se asocia información que no cambia con el tiempo. El SIR no mantiene el estado de entidades.
+  
+    * No se puede modificar ni dar de baja una entidad.
+    
+    # Definiciones geneales de la API
+    
+    La API se ha definido según los principio REST sobre HTTP/S. Publica un conjunto de métodos para acceder a las entidades del SIR.
+    
+    Opcionalmente, la capa de comunicaciones, monta una capa de protocolo TLS dando como resultado una conexión segura HTTPS.
+    
+    ## Control de acceso
+    
+    El control de acceso al SIR se realiza en la capa de comunicaciones. Si se tiene acceso a la API, se pueden utilizar todos sus métodos. 
+    
+    ### Autenticación
+    
+    Como el acceso se controla por TLS, la autenticación se realiza entre cliente y servidor mediante el uso de certificados digitales. 
+    
+    
+    En los equipos de preproducción, está accesible toda la API sin autenticación (HTTP) y con autenticación (HTTPS) pero en producción, solo se puede acceder con autenticación.
+    
+    
+    Los clientes a los que se les autorice el acceso, han de disponer de un certificado firmado por el Gestor de Seguridad. 
+    
+    
+    Los pasos para la generación de este certificado son los siguientes:
+    
+    1. El cliente genera su clave público-privada.
+    
+    1. Crea una solicitud de certificado (CSR - Certificate Signing Request) con la clave privada.
+    
+    1. Envía el CSR al gestor de seguridad.
+    
+    1. El cliente recibe del gestor de seguridad:
+        * Su certificado de cliente
+        * El ceritificado del SIR
+        
+    1. El cliente se configura con los certificados generados.
+    
+    ### Generación de solicitud de certificado digital (CSR)
+    
+    Para la generación de la clave público-privada y la solicitud de certificado, se pueden utilizar muchas herramientas, pero en este apartado se muestra un ejemplo utilizando **OpenSSL**. 
+    
+    Los paso a seguir, asumiendo que se tiene instalado el OpenSSL, son los siguientes:
+    
+    1. Generar la clave público-privada:
+    
+        ```
+        openssl genrsa -des3 -out {ruta de exportación}.key 1024
+        ```
+        
+        Esta ordren genera una clave RSA de 1024 bits y la exporta a la ruta indicada, en un fichero con extensión *.key*. 
+    
+    1. Generar el CSR a partir de la clave previamente generada:
+    
+        ```
+        openssl req -new -key {ruta de clave}.key -out {ruta de exportación}.csr
+        ```
+        
+        Esta ordren genera un fichero con extensión *.csr* a la ruta especificada, mostrando al usuario diferentes campos a rellenar para la correcta generació de la solicitud.
+    
+    ## Colecciones
+        
+    Determanados métodos de la API devuelven colecciones de entidades. En estos casos, de forma general, estos métodos disponen de propiedades que homogenizan el acceso a ellas.
+    
+    
+    Para toda la gestión de colecciones se ha utilizado como base la recomendación para [collections](https://github.com/microsoft/api-guidelines/blob/vNext/Guidelines.md#9-collections) de [Microsoft REST API Guidelines](https://github.com/microsoft/api-guidelines/blob/vNext/Guidelines.md) y [REST API Design: Filtering, Sorting, and Pagination](https://www.moesif.com/blog/technical/api-design/REST-API-Design-Filtering-Sorting-and-Pagination).
+    
+    ### Paginación
+    
+    El servidor, en caso de haber más datos de la collección de los que se han devuelto, devolvera un enlace a ella en el campo *@nextLink*.
+    
+    Tambien devuelve la estimación de la cantidad de elementos totales en la colección en el campo *@count*.
+    
+
+    Por ejemplo:
+      ```
+      {
+        ...,
+        "value": [...],
+        "@count": 1452,
+        "@nextLink": "{opaqueUrl}"
+      }
+      ```
+      
+    ### Filtrado
+    
+    Las colecciones se pueden filtrar usando los campos de las entidades que las componen.
+    
+    
+    El mecanismo y su sintaxis se realiza tal como indica esta [referencia de Microsoft](https://github.com/microsoft/api-guidelines/blob/vNext/Guidelines.md#97-filtering).
+    
+    ### Ordenado
+    
+    Las colecciones se pueden ordenar respecto a los campos de las entidades que las componen.
+    
+    
+    El mecanismo y su sintaxis se realiza tal como indica esta [referencia de Microsoft](https://github.com/microsoft/api-guidelines/blob/vNext/Guidelines.md#96-sorting-collections)
+    
+    ### Cosideraciones
+    
+    Hay que tener muy presentes a la hora de trabajar con colecciones en REST las consideraciones indicadas en [Microsoft REST API Guidelines](https://github.com/microsoft/api-guidelines/blob/vNext/Guidelines.md#983-additional-considerations)
+    
+tags:
+  - name: ccTIU
+    description: Acceso a las entidades de ccTIU
+  - name: ccTIU Models
+    description: Acceso a las entidades de Modelos de ccTIU
+  - name: Agencies
+    description: Acceso a las entidades de agencias o empresas del sistema
+  - name: Agency Group
+    description: Acceso a las entidades de grupo de empresas o agencias
+paths:
+  /cctius:
+    post:
+      tags:
+        - ccTIU
+      summary: Añade un nuevo ccTIU.
+      operationId: addCctiu
+      description:
+        'El SIR comprueba la coherencia. Se comprueba:
+        
+        * Que para un mismo modelo de ccTIU dentro de la colección **inmutableHwInfo**, se proporcionan los mismo **key** que en los modelos anteriores, y que los **value** son únicos.'
+        
+      requestBody:
+        description: Entidad ccTIU que se añade al SIR
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CctiuBase'
+        required: true
+      responses:
+        '201':
+          description: Operación correcta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cctiu'
+        '406':
+          description: No aceptado.
+            El contenido del cuerpo no cumple con el esquema esperado.
+    get:
+      tags:
+      - ccTIU
+      summary: Obtiene todos los ccTIU
+      description: Obtiene la colección de todos los ccTIU
+      operationId: getCctius
+      parameters: 
+        - name: offset
+          in: query
+          description: Número de elementos a to omitir antes de devolver el conjunto resultante.
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            
+        - name: limit
+          in: query
+          description: Número de elementos máximos a devolver.
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+            
+        - name: orderBy
+          in: query
+          description: Indica el orden utilizado al componer la colección de elementos
+          required: false
+          style: form
+          allowReserved: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Operación correcta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cctius'
+        '400':
+          description: El formato del ID suministrado es incorrecto
+        '404':
+          description: ccTIU no encontrada
+  '/cctius/{cctiuId}':
+    get:
+      tags:
+        - ccTIU
+      summary: Obtiene un ccTIU por su ID
+      description: Devuelve un único ccTIU
+      operationId: getCctiuById
+      parameters:
+        - name: cctiuId
+          in: path
+          description: ID del ccTIU
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Operación correcta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cctiu'
+        '400':
+          description: El formato del ID suministrado es incorrecto
+        '404':
+          description: ccTIU no encontrada
+components:
+  schemas:
+    CctiuBase:
+      required:
+        - modelId
+      type: object
+      properties:
+        modelId:
+          description: Identificador del modelo de ccTIU
+          type: integer
+          minimum: 1
+          maximum: 2147483647
+          example: 2
+        inmutableHwInfo:
+          description: Información propia de esta ccTIU que no cambia en el tiempo. 
+            Es una colección de elementos clave-valor.
+          type: array
+          items: 
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            - key: EC_CCTIU_MAC_ADDRESS
+              value: FCC23D13EDBB
+            - key: EC_CCTIU_FACTORY_ID
+              value: 0A80C20434100032A85EA00020000100
+              
+    Cctiu: 
+      allOf:
+        - type: object
+          required:
+            - id
+            - creationDate
+            - modificationDate
+          properties:
+            id:
+              description: Identificador único
+              type: integer
+              minimum: 1
+              maximum: 2147483647
+              example: 598
+            creationDate:
+              type: "string"
+              format: "date-time"      
+            modificationDate: 
+              type: "string"
+              format: "date-time"              
+        - $ref: '#/components/schemas/CctiuBase'
+    
+    CollectionLinkBase:
+      type: object
+      properties:
+        next:
+          description: URI al siguiente subconjunto de la colección
+          type: string
+          format: uri
+
+    Cctius:
+      type: object
+      properties:
+        links:
+          allOf:
+            - $ref: '#/components/schemas/CollectionLinkBase'
+        cctius:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cctiu'
+              
+          
+        
+      
+            
+            
+            
+    
+      
